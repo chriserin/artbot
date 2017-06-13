@@ -1,0 +1,8 @@
+[package]
+name = "artbot"
+version = "0.1.0"
+authors = ["chris"]
+
+[dependencies]
+image="*"
+num="*"
