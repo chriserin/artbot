@@ -2,7 +2,10 @@ extern crate num;
 extern crate image;
 extern crate iron;
 
+use std::collections::HashMap;
+
 use iron::prelude::*;
+use iron::Handler;
 use iron::status;
 
 use std::fs::File;
@@ -66,14 +69,47 @@ fn generate_image() -> image::DynamicImage {
 }
 
 fn main() {
-    Iron::new(|_: &mut Request| {
+    let mut router = Router::new();
+
+    router.add_route("slack".to_string(), |_: &mut Request| {
+        let content_type = "application/json".parse::<iron::mime::Mime>().unwrap();
+        Ok(Response::with((content_type, status::Ok, "{\"text\": \"http://pure-fjord-49395.herokuapp.com/image.png\"}")))
+    });
+
+    router.add_route("image.png".to_string(), |_: &mut Request| {
         use iron::mime;
-        let content_type = "image/png".parse::<mime::Mime>().unwrap();
+        let content_type = "image/png".parse::<iron::mime::Mime>().unwrap();
         let image_rgb = generate_image();
         let mut bytes: Vec<u8> = Vec::new();
         image_rgb.save(&mut bytes, image::PNG);
         Ok(Response::with((content_type, status::Ok, bytes)))
-    }).http(("0.0.0.0", get_server_port())).unwrap();
+    });
+
+    Iron::new(router).http(("0.0.0.0", get_server_port())).unwrap();
+}
+
+struct Router {
+    // Routes here are simply matched with the url path.
+    routes: HashMap<String, Box<Handler>>
+}
+
+impl Router {
+    fn new() -> Self {
+        Router { routes: HashMap::new() }
+    }
+
+    fn add_route<H>(&mut self, path: String, handler: H) where H: Handler {
+        self.routes.insert(path, Box::new(handler));
+    }
+}
+
+impl Handler for Router {
+    fn handle(&self, req: &mut Request) -> IronResult<Response> {
+        match self.routes.get(&req.url.path().join("/")) {
+            Some(handler) => handler.handle(req),
+            None => Ok(Response::with(status::NotFound))
+        }
+    }
 }
 
 fn get_server_port() -> u16 {
