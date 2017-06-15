@@ -1,18 +1,23 @@
 extern crate num;
 extern crate image;
 extern crate iron;
+extern crate router;
+extern crate rand;
 
 use std::collections::HashMap;
 
 use iron::prelude::*;
-use iron::Handler;
 use iron::status;
+
+use router::Router;
 
 use std::fs::File;
 use std::path::Path;
 use std::env;
 
 use num::complex::Complex;
+
+use rand::Rng;
 
 fn generate_image() -> image::DynamicImage {
     let max_iterations = 256u16;
@@ -71,45 +76,24 @@ fn generate_image() -> image::DynamicImage {
 fn main() {
     let mut router = Router::new();
 
-    router.add_route("slack".to_string(), |_: &mut Request| {
+    router.get("/slack", slack_handler, "slack");
+    router.get("/:image_seed/image.png", image_handler, "image");
+
+    fn slack_handler(_: &mut Request) -> IronResult<Response> {
         let content_type = "application/json".parse::<iron::mime::Mime>().unwrap();
         Ok(Response::with((content_type, status::Ok, "{\"text\": \"http://pure-fjord-49395.herokuapp.com/image.png\"}")))
-    });
+    }
 
-    router.add_route("image.png".to_string(), |_: &mut Request| {
+    fn image_handler(_: &mut Request) -> IronResult<Response> {
         use iron::mime;
         let content_type = "image/png".parse::<iron::mime::Mime>().unwrap();
         let image_rgb = generate_image();
         let mut bytes: Vec<u8> = Vec::new();
         image_rgb.save(&mut bytes, image::PNG);
         Ok(Response::with((content_type, status::Ok, bytes)))
-    });
+    }
 
     Iron::new(router).http(("0.0.0.0", get_server_port())).unwrap();
-}
-
-struct Router {
-    // Routes here are simply matched with the url path.
-    routes: HashMap<String, Box<Handler>>
-}
-
-impl Router {
-    fn new() -> Self {
-        Router { routes: HashMap::new() }
-    }
-
-    fn add_route<H>(&mut self, path: String, handler: H) where H: Handler {
-        self.routes.insert(path, Box::new(handler));
-    }
-}
-
-impl Handler for Router {
-    fn handle(&self, req: &mut Request) -> IronResult<Response> {
-        match self.routes.get(&req.url.path().join("/")) {
-            Some(handler) => handler.handle(req),
-            None => Ok(Response::with(status::NotFound))
-        }
-    }
 }
 
 fn get_server_port() -> u16 {
