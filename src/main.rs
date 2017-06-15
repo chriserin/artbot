@@ -43,7 +43,7 @@ fn main() {
             i = t;
         }
 
-        r = (((f32::from(i).log(4.0) * 128.0) as u32) % 256) as u8;
+        r = (((f32::from(i).log(4.0) * 256.0) as u32) % 256) as u8;
         g = (((f32::from(i).log(f32::from(r)) * 196.0) as u32) % 256) as u8;
         b = (((f32::from(i).log(f32::from(g)) * 256.0) as u32) % 256) as u8;
 
