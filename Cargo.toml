@@ -6,3 +6,6 @@ authors = ["chris"]
 [dependencies]
 image="*"
 num="*"
+
+[dependencies.iron]
+version="*"

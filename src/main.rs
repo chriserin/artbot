@@ -1,12 +1,16 @@
 extern crate num;
 extern crate image;
+extern crate iron;
+
+use iron::prelude::*;
+use iron::status;
 
 use std::fs::File;
 use std::path::Path;
 
 use num::complex::Complex;
 
-fn main() {
+fn generate_image() -> image::DynamicImage {
     let max_iterations = 256u16;
 
     let imgx = 400;
@@ -57,5 +61,16 @@ fn main() {
     let ref mut fout = File::create(&Path::new("blue.png")).unwrap();
 
     // We must indicate the image’s color type and what format to save as
-    let _ = image::ImageRgb8(imgbuf).save(fout, image::PNG);
+    image::ImageRgb8(imgbuf)
+}
+
+fn main() {
+    Iron::new(|_: &mut Request| {
+        use iron::mime;
+        let content_type = "image/png".parse::<mime::Mime>().unwrap();
+        let image_rgb = generate_image();
+        let mut bytes: Vec<u8> = Vec::new();
+        image_rgb.save(&mut bytes, image::PNG);
+        Ok(Response::with((content_type, status::Ok, bytes)))
+    }).http("localhost:3000").unwrap();
 }
