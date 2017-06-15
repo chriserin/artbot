@@ -7,6 +7,7 @@ use iron::status;
 
 use std::fs::File;
 use std::path::Path;
+use std::env;
 
 use num::complex::Complex;
 
@@ -72,5 +73,10 @@ fn main() {
         let mut bytes: Vec<u8> = Vec::new();
         image_rgb.save(&mut bytes, image::PNG);
         Ok(Response::with((content_type, status::Ok, bytes)))
-    }).http("localhost:3000").unwrap();
+    }).http(("0.0.0.0", get_server_port())).unwrap();
+}
+
+fn get_server_port() -> u16 {
+    let port_str = env::var("PORT").unwrap_or(String::new());
+    port_str.parse().unwrap_or(8080)
 }
