@@ -18,14 +18,18 @@ use std::env;
 use num::complex::Complex;
 
 use rand::Rng;
+use rand::XorShiftRng;
+use rand::SeedableRng;
 
-fn generate_image() -> image::DynamicImage {
-    let max_iterations = 256u16;
+fn generate_image(image_seed: u32) -> image::DynamicImage {
+
+    let mut xor_rand = XorShiftRng::from_seed([image_seed; 4]);
+    let max_iterations: u16 = xor_rand.gen_range(128, 256);
 
     let imgx = 400;
     let imgy = 400;
 
-    let zoom = 0.4;
+    let zoom = xor_rand.gen_range(0.2, 0.7);
 
     let scalex = zoom / imgx as f32;
     let scaley = zoom / imgy as f32;
@@ -33,13 +37,20 @@ fn generate_image() -> image::DynamicImage {
     // Create a new ImgBuf with width: imgx and height: imgy
     let mut imgbuf = image::ImageBuffer::new(imgx, imgy);
 
+    let mut x_adjust = xor_rand.gen_range(0.4, 256.0);
+    let mut y_adjust = xor_rand.gen_range(0.4, 256.0);
+    let mut color_adjust = xor_rand.gen_range(10.0, 256.0);
+
+    let mut julia_adjustor_x = xor_rand.gen_range(-0.6, 0.6);
+
     // Iterate over the coordinates and pixels of the image
     for (x, y, pixel) in imgbuf.enumerate_pixels_mut() {
-        let cy = y as f32 * scaley - zoom / 1.0;
-        let cx = x as f32 * scalex - zoom / 48.0;
+        let randx_adjust = x_adjust + xor_rand.gen_range(0.01, 0.2);
+        let cy = y as f32 * scaley - zoom / randx_adjust;
+        let cx = x as f32 * scalex - zoom / y_adjust;
 
         let mut z = Complex::new(cx, cy);
-        let c = Complex::new(-0.4, 0.6);
+        let c = Complex::new(julia_adjustor_x, 0.6);
 
         let mut i = 0;
         let mut r = 0;
@@ -56,18 +67,14 @@ fn generate_image() -> image::DynamicImage {
             i = t;
         }
 
-        r = (((f32::from(i).log(4.0) * 256.0) as u32) % 256) as u8;
-        g = (((f32::from(i).log(f32::from(r)) * 196.0) as u32) % 256) as u8;
-        b = (((f32::from(i).log(f32::from(g)) * 256.0) as u32) % 256) as u8;
-
+        r = (((f32::from(i).log(4.0) * color_adjust) as u32) % 256) as u8;
+        g = (((f32::from(i).log(f32::from(r)) * xor_rand.gen_range(196.0, 256.0)) as u32) % 256) as u8;
+        b = (((f32::from(i).log(f32::from(g)) * xor_rand.gen_range(196.0, 256.0)) as u32) % 256) as u8;
+        let rgb_array = [r as u8, g as u8, b as u8];
         // Create an 8bit pixel of type Luma and value i
         // and assign in to the pixel at position (x, y)
-        *pixel = image::Rgb([r as u8, g as u8, b as u8]);
+        *pixel = image::Rgb([rgb_array[xor_rand.gen_range(1,3)] as u8, rgb_array[xor_rand.gen_range(1,2)] as u8, rgb_array[xor_rand.gen_range(1,3)] as u8]);
     }
-
-
-    // Save the image as “fractal.png”
-    let ref mut fout = File::create(&Path::new("blue.png")).unwrap();
 
     // We must indicate the image’s color type and what format to save as
     image::ImageRgb8(imgbuf)
@@ -81,13 +88,17 @@ fn main() {
 
     fn slack_handler(_: &mut Request) -> IronResult<Response> {
         let content_type = "application/json".parse::<iron::mime::Mime>().unwrap();
-        Ok(Response::with((content_type, status::Ok, "{\"text\": \"http://pure-fjord-49395.herokuapp.com/image.png\"}")))
+        let secret_number = rand::thread_rng().gen_range(1, u32::max_value());
+        Ok(Response::with((content_type, status::Ok, format!("{{\"text\": \"http://pure-fjord-49395.herokuapp.com/{image_seed}/image.png\"}}", image_seed=secret_number))))
     }
 
-    fn image_handler(_: &mut Request) -> IronResult<Response> {
+    fn image_handler(req: &mut Request) -> IronResult<Response> {
         use iron::mime;
+
+        let ref image_seed = req.extensions.get::<Router>().unwrap().find("image_seed").unwrap_or("123");
+
         let content_type = "image/png".parse::<iron::mime::Mime>().unwrap();
-        let image_rgb = generate_image();
+        let image_rgb = generate_image(image_seed.parse::<u32>().unwrap());
         let mut bytes: Vec<u8> = Vec::new();
         image_rgb.save(&mut bytes, image::PNG);
         Ok(Response::with((content_type, status::Ok, bytes)))
