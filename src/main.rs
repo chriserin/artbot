@@ -73,7 +73,7 @@ fn generate_image(image_seed: u32) -> image::DynamicImage {
         let rgb_array = [r as u8, g as u8, b as u8];
         // Create an 8bit pixel of type Luma and value i
         // and assign in to the pixel at position (x, y)
-        *pixel = image::Rgb([rgb_array[xor_rand.gen_range(1,3)] as u8, rgb_array[xor_rand.gen_range(1,2)] as u8, rgb_array[xor_rand.gen_range(1,3)] as u8]);
+        *pixel = image::Rgb([rgb_array[xor_rand.gen_range(0,3)] as u8, g as u8, b as u8]);
     }
 
     // We must indicate the image’s color type and what format to save as
