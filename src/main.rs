@@ -43,7 +43,7 @@ fn generate_image(image_seed: u32) -> image::DynamicImage {
 
     let mut julia_adjustor_x = xor_rand.gen_range(-0.6, 0.6);
 
-    let pixelation = xor_rand.gen_range(156, 240);
+    let pixelation = xor_rand.gen_range(156, max_iterations);
 
     // Iterate over the coordinates and pixels of the image
     for (x, y, pixel) in imgbuf.enumerate_pixels_mut() {
