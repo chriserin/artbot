@@ -4,7 +4,7 @@ extern crate iron;
 extern crate router;
 extern crate rand;
 
-use std::collections::HashMap;
+use std::cmp;
 
 use iron::prelude::*;
 use iron::status;
@@ -24,7 +24,7 @@ use rand::SeedableRng;
 fn generate_image(image_seed: u32) -> image::DynamicImage {
 
     let mut xor_rand = XorShiftRng::from_seed([image_seed; 4]);
-    let max_iterations: u16 = xor_rand.gen_range(128, 256);
+    let max_iterations: u16 = xor_rand.gen_range(196, 256);
 
     let imgx = 400;
     let imgy = 400;
@@ -42,6 +42,8 @@ fn generate_image(image_seed: u32) -> image::DynamicImage {
     let mut color_adjust = xor_rand.gen_range(10.0, 256.0);
 
     let mut julia_adjustor_x = xor_rand.gen_range(-0.6, 0.6);
+
+    let pixelation = xor_rand.gen_range(156, 240);
 
     // Iterate over the coordinates and pixels of the image
     for (x, y, pixel) in imgbuf.enumerate_pixels_mut() {
@@ -68,8 +70,8 @@ fn generate_image(image_seed: u32) -> image::DynamicImage {
         }
 
         r = (((f32::from(i).log(4.0) * color_adjust) as u32) % 256) as u8;
-        g = (((f32::from(i).log(f32::from(r)) * xor_rand.gen_range(196.0, 256.0)) as u32) % 256) as u8;
-        b = (((f32::from(i).log(f32::from(g)) * xor_rand.gen_range(196.0, 256.0)) as u32) % 256) as u8;
+        g = (((f32::from(i).log(f32::from(r)) * xor_rand.gen_range(cmp::max(i, pixelation) as f32, max_iterations as f32)) as u32) % 256) as u8;
+        b = (((f32::from(i).log(f32::from(g)) * xor_rand.gen_range(cmp::max(i, pixelation) as f32, max_iterations as f32)) as u32) % 256) as u8;
         let rgb_array = [r as u8, g as u8, b as u8];
         // Create an 8bit pixel of type Luma and value i
         // and assign in to the pixel at position (x, y)
