@@ -83,7 +83,7 @@ fn generate_image(image_seed: u32) -> image::DynamicImage {
 fn main() {
     let mut router = Router::new();
 
-    router.get("/slack", slack_handler, "slack");
+    router.post("/slack", slack_handler, "slack");
     router.get("/:image_seed/image.png", image_handler, "image");
 
     fn slack_handler(_: &mut Request) -> IronResult<Response> {
