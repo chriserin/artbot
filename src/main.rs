@@ -24,7 +24,8 @@ use rand::SeedableRng;
 fn generate_image(image_seed: u32) -> image::DynamicImage {
 
     let mut xor_rand = XorShiftRng::from_seed([image_seed; 4]);
-    let max_iterations: u16 = xor_rand.gen_range(196, 256);
+    let lower_bound_max_iterations = 144;
+    let max_iterations: u16 = xor_rand.gen_range(lower_bound_max_iterations, 256);
 
     let imgx = 400;
     let imgy = 400;
@@ -43,7 +44,9 @@ fn generate_image(image_seed: u32) -> image::DynamicImage {
 
     let mut julia_adjustor_x = xor_rand.gen_range(-0.6, 0.6);
 
-    let pixelation = xor_rand.gen_range(156, max_iterations);
+    let pixelation = xor_rand.gen_range(lower_bound_max_iterations - 1, max_iterations);
+
+    let pallette_choice = xor_rand.gen_range(0,9);
 
     // Iterate over the coordinates and pixels of the image
     for (x, y, pixel) in imgbuf.enumerate_pixels_mut() {
@@ -75,7 +78,22 @@ fn generate_image(image_seed: u32) -> image::DynamicImage {
         let rgb_array = [r as u8, g as u8, b as u8];
         // Create an 8bit pixel of type Luma and value i
         // and assign in to the pixel at position (x, y)
-        *pixel = image::Rgb([rgb_array[xor_rand.gen_range(0,3)] as u8, g as u8, b as u8]);
+        //
+        let pallettes = [
+            [r as u8, g as u8, b as u8],
+            [g as u8, b as u8, r as u8],
+            [b as u8, r as u8, g as u8],
+            [g as u8, r as u8, b as u8],
+            [b as u8, g as u8, r as u8],
+            [r as u8, b as u8, g as u8],
+            [rgb_array[xor_rand.gen_range(0,3)] as u8, g as u8, b as u8],
+            [r as u8, rgb_array[xor_rand.gen_range(0,3)] as u8, b as u8],
+            [r as u8, g as u8, rgb_array[xor_rand.gen_range(0,3)] as u8]
+        ];
+
+        let pallette = [pallettes[pallette_choice], pallettes[xor_rand.gen_range(0,9)]][xor_rand.gen_range(0,2)];
+
+        *pixel = image::Rgb(pallette);
     }
 
     // We must indicate the image’s color type and what format to save as
