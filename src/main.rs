@@ -43,6 +43,7 @@ fn generate_image(imgx: u32, imgy: u32, image_seed: u32, recurse_count: u8) -> i
     let mut color_adjust = xor_rand.gen_range(10.0, 256.0);
 
     let mut julia_adjustor_x = xor_rand.gen_range(-0.6, 0.6);
+    let julia_adjustor_y = [0.6, -0.6, -0.7, -0.5, -0.6, 0.6][xor_rand.gen_range(0, 6)];
 
     let pixelation = xor_rand.gen_range(lower_bound_max_iterations - 1, max_iterations);
 
@@ -57,7 +58,7 @@ fn generate_image(imgx: u32, imgy: u32, image_seed: u32, recurse_count: u8) -> i
         let cx = x as f32 * scalex - zoom / y_adjust;
 
         let mut z = Complex::new(cx, cy);
-        let c = Complex::new(julia_adjustor_x, 0.6);
+        let c = Complex::new(julia_adjustor_x, julia_adjustor_y);
 
         let mut i = 0;
         let mut r = 0;
