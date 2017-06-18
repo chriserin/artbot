@@ -147,6 +147,7 @@ fn main() {
 
     router.post("/slack", slack_handler, "slack");
     router.get("/:image_seed/image.png", image_handler, "image");
+    router.get("/rand.png", random_image_handler, "rand");
 
     fn slack_handler(_: &mut Request) -> IronResult<Response> {
         let content_type = "application/json".parse::<iron::mime::Mime>().unwrap();
@@ -161,6 +162,18 @@ fn main() {
 
         let content_type = "image/png".parse::<iron::mime::Mime>().unwrap();
         let image_rgb = generate_image(image_seed.parse::<u32>().unwrap());
+        let mut bytes: Vec<u8> = Vec::new();
+        image_rgb.save(&mut bytes, image::PNG);
+        Ok(Response::with((content_type, status::Ok, bytes)))
+    }
+
+    fn random_image_handler(req: &mut Request) -> IronResult<Response> {
+        use iron::mime;
+
+        let image_seed = rand::thread_rng().gen_range(1, u32::max_value());
+
+        let content_type = "image/png".parse::<iron::mime::Mime>().unwrap();
+        let image_rgb = generate_image(image_seed);
         let mut bytes: Vec<u8> = Vec::new();
         image_rgb.save(&mut bytes, image::PNG);
         Ok(Response::with((content_type, status::Ok, bytes)))
