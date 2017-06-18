@@ -24,7 +24,7 @@ use rand::SeedableRng;
 use image::GenericImage;
 use image::Pixel;
 
-fn generate_image(imgx: u32, imgy: u32, image_seed: u32) -> image::DynamicImage {
+fn generate_image(imgx: u32, imgy: u32, image_seed: u32, recurse_count: u8) -> image::DynamicImage {
 
     let mut xor_rand = XorShiftRng::from_seed([image_seed; 4]);
     let lower_bound_max_iterations = 144;
@@ -123,15 +123,16 @@ fn generate_image(imgx: u32, imgy: u32, image_seed: u32) -> image::DynamicImage 
     let max_iter = ((imgx * imgy) as i32 * (max_iterations - 2) as i32) as u64;
     let min_iter = ((imgx * imgy) as i32 * 3 as i32) as u64;
 
-    if iteration_count >= max_iter || iteration_count < min_iter {
+    if iteration_count >= max_iter || iteration_count < min_iter && recurse_count < 4 {
+        println!("recusing {}", iteration_count);
         let img = image::ImageRgb8(imgbuf.clone());
-        let img2 = generate_image(imgx, imgy, (iteration_count as u32) - xor_rand.gen_range(0, 100));
+        let img2 = generate_image(imgx, imgy, (iteration_count as u32) - xor_rand.gen_range(0, 100), recurse_count + 1);
 
         for (x, y, pixel) in imgbuf.enumerate_pixels_mut() {
             let mut pixel_a = img2.get_pixel(x, y);
             let pixel_b = img.get_pixel(x, y);
             let channels = pixel_b.channels();
-            pixel_a.blend(&image::Rgba([channels[0], channels[1], channels[2], 128 as u8 ]));
+            pixel_a.blend(&image::Rgba([channels[0], channels[1], channels[2], 32 as u8 ]));
             *pixel = pixel_a.to_rgb();
         }
     }
@@ -158,7 +159,7 @@ fn main() {
         let ref image_seed = req.extensions.get::<Router>().unwrap().find("image_seed").unwrap_or("123");
 
         let content_type = "image/png".parse::<iron::mime::Mime>().unwrap();
-        let image_rgb = generate_image(400, 400, image_seed.parse::<u32>().unwrap());
+        let image_rgb = generate_image(400, 400, image_seed.parse::<u32>().unwrap(), 0);
         let mut bytes: Vec<u8> = Vec::new();
         image_rgb.save(&mut bytes, image::PNG);
         Ok(Response::with((content_type, status::Ok, bytes)))
@@ -167,10 +168,11 @@ fn main() {
     fn random_image_handler(req: &mut Request) -> IronResult<Response> {
         use iron::mime;
 
+        println!("NEW IMAGE");
         let image_seed = rand::thread_rng().gen_range(1, u32::max_value());
 
         let content_type = "image/png".parse::<iron::mime::Mime>().unwrap();
-        let image_rgb = generate_image(800, 800, image_seed);
+        let image_rgb = generate_image(800, 800, image_seed, 0);
         let mut bytes: Vec<u8> = Vec::new();
         image_rgb.save(&mut bytes, image::PNG);
         Ok(Response::with((content_type, status::Ok, bytes)))
