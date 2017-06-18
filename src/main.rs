@@ -21,6 +21,9 @@ use rand::Rng;
 use rand::XorShiftRng;
 use rand::SeedableRng;
 
+use image::GenericImage;
+use image::Pixel;
+
 fn generate_image(image_seed: u32) -> image::DynamicImage {
 
     let mut xor_rand = XorShiftRng::from_seed([image_seed; 4]);
@@ -76,9 +79,7 @@ fn generate_image(image_seed: u32) -> image::DynamicImage {
         g = (((f32::from(i).log(f32::from(r)) * xor_rand.gen_range(cmp::max(i, pixelation) as f32, max_iterations as f32)) as u32) % 256) as u8;
         b = (((f32::from(i).log(f32::from(g)) * xor_rand.gen_range(cmp::max(i, pixelation) as f32, max_iterations as f32)) as u32) % 256) as u8;
         let rgb_array = [r as u8, g as u8, b as u8];
-        // Create an 8bit pixel of type Luma and value i
-        // and assign in to the pixel at position (x, y)
-        //
+
         let pallettes = [
             [r as u8, g as u8, b as u8],
             [g as u8, b as u8, r as u8],
@@ -91,12 +92,25 @@ fn generate_image(image_seed: u32) -> image::DynamicImage {
             [r as u8, g as u8, rgb_array[xor_rand.gen_range(0,3)] as u8]
         ];
 
-        let pallette = [pallettes[pallette_choice], pallettes[xor_rand.gen_range(0,9)]][xor_rand.gen_range(0,2)];
+        let pallette = [pallettes[pallette_choice], pallettes[pallette_choice], pallettes[xor_rand.gen_range(0,9)]][xor_rand.gen_range(0,3)];
 
         *pixel = image::Rgb(pallette);
     }
 
-    // We must indicate the image’s color type and what format to save as
+
+    if xor_rand.gen_range(0,5) >= 3 {
+        let img = image::ImageRgb8(imgbuf.clone());
+        let img2 = img.clone().rotate180();
+
+        for (x, y, pixel) in imgbuf.enumerate_pixels_mut() {
+            let mut pixel_a = img2.get_pixel(x, y);
+            let pixel_b = img.get_pixel(x, y);
+            let channels = pixel_b.channels();
+            pixel_a.blend(&image::Rgba([channels[0], channels[1], channels[2], 128]));
+            *pixel = pixel_a.to_rgb();
+        }
+    }
+
     image::ImageRgb8(imgbuf)
 }
 
