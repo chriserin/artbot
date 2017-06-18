@@ -51,6 +51,8 @@ fn generate_image(image_seed: u32) -> image::DynamicImage {
 
     let pallette_choice = xor_rand.gen_range(0,9);
 
+    let mut iteration_count: u64 = 0;
+
     // Iterate over the coordinates and pixels of the image
     for (x, y, pixel) in imgbuf.enumerate_pixels_mut() {
         let randx_adjust = x_adjust + xor_rand.gen_range(0.01, 0.2);
@@ -74,6 +76,8 @@ fn generate_image(image_seed: u32) -> image::DynamicImage {
 
             i = t;
         }
+
+        iteration_count = iteration_count + i as u64;
 
         r = (((f32::from(i).log(4.0) * color_adjust) as u32) % 256) as u8;
         g = (((f32::from(i).log(f32::from(r)) * xor_rand.gen_range(cmp::max(i, pixelation) as f32, max_iterations as f32)) as u32) % 256) as u8;
@@ -107,6 +111,22 @@ fn generate_image(image_seed: u32) -> image::DynamicImage {
             let pixel_b = img.get_pixel(x, y);
             let channels = pixel_b.channels();
             pixel_a.blend(&image::Rgba([channels[0], channels[1], channels[2], 128]));
+            *pixel = pixel_a.to_rgb();
+        }
+    }
+
+    let max_iter = ((imgx * imgy) as i32 * (max_iterations - 2) as i32) as u64;
+    let min_iter = ((imgx * imgy) as i32 * 3 as i32) as u64;
+
+    if iteration_count >= max_iter || iteration_count < min_iter {
+        let img = image::ImageRgb8(imgbuf.clone());
+        let img2 = generate_image((iteration_count as u32) - xor_rand.gen_range(0, 100));
+
+        for (x, y, pixel) in imgbuf.enumerate_pixels_mut() {
+            let mut pixel_a = img2.get_pixel(x, y);
+            let pixel_b = img.get_pixel(x, y);
+            let channels = pixel_b.channels();
+            pixel_a.blend(&image::Rgba([channels[0], channels[1], channels[2], 128 as u8 ]));
             *pixel = pixel_a.to_rgb();
         }
     }
