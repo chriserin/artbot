@@ -151,7 +151,7 @@ fn main() {
     fn slack_handler(_: &mut Request) -> IronResult<Response> {
         let content_type = "application/json".parse::<iron::mime::Mime>().unwrap();
         let secret_number = rand::thread_rng().gen_range(1, u32::max_value());
-        Ok(Response::with((content_type, status::Ok, format!("{{\"text\": \"http://pure-fjord-49395.herokuapp.com/{image_seed}/image.png\"}}", image_seed=secret_number))))
+        Ok(Response::with((content_type, status::Ok, format!("{{\"text\": \"http://art-bot.art/{image_seed}/image.png\"}}", image_seed=secret_number))))
     }
 
     fn image_handler(req: &mut Request) -> IronResult<Response> {
