@@ -104,7 +104,7 @@ fn generate_image(image_seed: u32) -> image::DynamicImage {
 
     if xor_rand.gen_range(0,5) >= 3 {
         let img = image::ImageRgb8(imgbuf.clone());
-        let img2 = img.clone().rotate180();
+        let ref img2 = [img.clone().rotate180(), img.clone().rotate90()][xor_rand.gen_range(0,2)];
 
         for (x, y, pixel) in imgbuf.enumerate_pixels_mut() {
             let mut pixel_a = img2.get_pixel(x, y);
