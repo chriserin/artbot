@@ -1,0 +1,8 @@
+
+name: artbot
+url: https://chriserin.github.io/artbot/
+description: |
+  Arbot generates a randomly generated PNG using the Julia fractal set as a starting point
+technologies:
+  - Rust
+  - Fractals
